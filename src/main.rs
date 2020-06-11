@@ -72,8 +72,8 @@ impl HiveGraphqlClient {
      * HeaderMap implements FromIterator<Item=(HeaderName, HeaderValue)>
      */
     let default_headers: HeaderMap = vec![
-      todo!(),
-      todo!(),
+      unimplemented!(),
+      unimplemented!(),
     ].into_iter().collect();
     
     HiveGraphqlClient {
@@ -84,20 +84,20 @@ impl HiveGraphqlClient {
     let client = &self.client;
     //use the client to POST to the endpoint, set the body to the query, send the query, and receive it as JSON
     // which will parse directly into an ActionQueryResponse
-    let res_data: ActionsQueryResponse = todo!();
+    let res_data: ActionsQueryResponse = unimplemented!();
 
     // return an Ok with an iterator over the action nodes
     Ok(res_data.data.actions.edges.into_iter()
       // go from { node: {_id, deadline, ...}} to {_id, deadline, ...}
       .map(|q_node| q_node.node)
       // return only results where the deadline exists and is after right now
-      .filter(|node| todo!()))
+      .filter(|node| unimplemented!()))
   }
 }
 
 #[tokio::main]
 async fn main() -> Result<()> {
-  let client = HiveGraphqlClient::new(todo!("your JWT here"));
+  let client = HiveGraphqlClient::new(unimplemented!("your JWT here"));
   for action in client.my_overdue_actions().await? {
     println!("{:?}", action);
   }
