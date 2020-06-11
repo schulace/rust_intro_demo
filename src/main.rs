@@ -9,10 +9,31 @@ use reqwest::{
 };
 use anyhow::{Context, Result};
 
+static GRAPHQL_ENDPOINT: &'static str  = "https://prod-gql.hive.com/graphql";
+static ACTIONS_QUERY: &'static str = r#"{"query": "
+  query {
+    actions {
+      edges {
+        node {
+          _id,
+          title,
+          status,
+          deadline
+        }
+      }
+    }
+  }
+"}"#;
 
+/// Top level response. The following structs mirror the structure of
+/// the query.
 #[derive(Deserialize, Debug)]
 struct ActionsQueryResponse {
   data: ActionsQueryAction
+}
+#[derive(Deserialize, Debug)]
+struct ActionsQueryAction {
+  actions: ActionsQueryEdges
 }
 
 #[derive(Deserialize, Debug)]
@@ -20,10 +41,6 @@ struct ActionsQueryEdges {
   edges: Vec<ActionsQueryNode>
 }
 
-#[derive(Deserialize, Debug)]
-struct ActionsQueryAction {
-  actions: ActionsQueryEdges
-}
 
 #[derive(Deserialize, Debug)]
 struct ActionsQueryNode {
@@ -35,13 +52,11 @@ struct ActionNode {
   _id: String,
   title: String,
   status: String,
+  /// Optional fields in GQL are represented with `Option`
   deadline: Option<DateTime<Utc>>,
 }
 
-
-static GRAPHQL_ENDPOINT: &'static str  = "https://prod-gql.hive.com/graphql";
-static ACTIONS_QUERY: &'static str = r#"{"query": "query { actions { edges { node { _id, title, status, deadline, } } } }"}"#;
-
+/// A wrapper around an HTTP client that will exclusively connect to prod-gql
 struct HiveGraphqlClient {
   client: reqwest::Client
 }
@@ -49,9 +64,16 @@ struct HiveGraphqlClient {
 
 impl HiveGraphqlClient {
   fn new(jwt: &str) -> HiveGraphqlClient {
+    /**
+     * To connect to GQL, we need to have headers
+     *  authorization="Bearer ${jwt}"
+     *  content-type="application/json"
+     *  
+     * HeaderMap implements FromIterator<Item=(HeaderName, HeaderValue)>
+     */
     let default_headers: HeaderMap = vec![
-      (HeaderName::from_static("authorization"), HeaderValue::from_str(&format!("Bearer {}", jwt)).expect("malformed JWT")),
-      (HeaderName::from_static("content-type"), HeaderValue::from_static("application/json"))
+      unimplemented!(),
+      unimplemented!(),
     ].into_iter().collect();
     
     HiveGraphqlClient {
@@ -60,13 +82,16 @@ impl HiveGraphqlClient {
   }
   async fn my_overdue_actions(&self) -> Result<impl Iterator<Item = ActionNode>> {
     let client = &self.client;
-    let res_data: ActionsQueryResponse = client.post(GRAPHQL_ENDPOINT).body(ACTIONS_QUERY).send().await?.json().await?;
+    //use the client to POST to the endpoint, set the body to the query, send the query, and receive it as JSON
+    // which will parse directly into an ActionQueryResponse
+    let res_data: ActionsQueryResponse = unimplemented!();
+
+    // return an Ok with an iterator over the action nodes
     Ok(res_data.data.actions.edges.into_iter()
+      // go from { node: {_id, deadline, ...}} to {_id, deadline, ...}
       .map(|q_node| q_node.node)
-      .filter(|node| match node.deadline {
-        Some(deadline) if deadline > Utc::now() => true,
-        _ => false
-      }))
+      // return only results where the deadline exists and is after right now
+      .filter(|node| unimplemented!()))
   }
 }
 
@@ -80,20 +105,4 @@ async fn main() -> Result<()> {
 
 }
 
-// #[tokio::main]
-// async fn main() -> reqwest::Result<()> {
-//   let client = reqwest::Client::new();
-
-//   //does nothing
-//   tokio::spawn(print_site("https://www.yahoo.com"));
-
-//   //prints the contents of yahoo.com to the screen
-//   // print_site("https://www.google.com").await;
-//   Ok(())
-// }
-// async fn print_site(site: &str) -> reqwest::Result<()>{
-//   let s = reqwest::get(site).await?.text().await?;
-//   println!("{}", s);
-//   Ok(())
-// }
 
